@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["d@nmilne.com"]
   spec.summary       = %q{Find website icons}
   spec.description   = %q{Ficon finds icons for websites and optionally, the best icon}
-  spec.homepage      = ""
+  spec.homepage      = "https://github.com/dkam/ficon"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0")
