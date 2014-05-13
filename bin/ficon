@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require 'ficon'
+
+puts Ficon.from_uri ARGV[0] 
