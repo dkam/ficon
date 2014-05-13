@@ -25,7 +25,18 @@ module Ficon
       uri = data.base_uri 
 
     rescue OpenURI::HTTPError, SocketError => e
-      puts e.inspect
+      puts "OpenURI:  #{e.inspect}"
+      return nil
+    rescue TypeError  => e
+      if  uri.to_s =~ /^http/
+        puts "#{e.inspect}"
+        puts "#{e.backtrace.join('\n')}"
+      else
+        puts "Please prepend http:// or https:// to the URL" 
+      end
+      return nil
+    rescue RuntimeError => e
+      puts "#{e.message}"
       return nil
     end
 
