@@ -7,8 +7,16 @@ require 'net/http'
 
 module Ficon
   def self.from_uri(_uri)
-    uri = URI(_uri)
+
+    uri = nil
     doc = nil
+
+    begin
+      require 'addressable/uri'
+      uri = Addressable::URI.heuristic_parse(_uri)
+    rescue LoadError
+      uri = URI(_uri)
+    end
 
     begin
       data = open(uri)
