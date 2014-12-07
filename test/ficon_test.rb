@@ -17,6 +17,7 @@ require 'ficon'
   Tests << { html: %Q{<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/wp-content/themes/torrentfreakredux/assets/img/icons/72.png">}, value: '/wp-content/themes/torrentfreakredux/assets/img/icons/72.png' }
   Tests << { html: %Q{<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/wp-content/themes/torrentfreakredux/assets/img/icons/144.png">}, value: '/wp-content/themes/torrentfreakredux/assets/img/icons/144.png' }
   Tests << { html: %Q{<link rel="shortcut icon" href="/favicon.png">}, value: '/favicon.png' }
+  Tests << { html: %Q{<link rel="shortcut icon" href="favicon.ico" />}, value: '/favicon.ico'           }
   Tests << { html: %Q{<link rel="apple-touch-icon" href="/apple-touch-icon.png">}, value: '/apple-touch-icon.png' }
   Tests << { html: %Q{<link rel="shortcut icon" href="http://example.com/myicon.ico" />}, value: 'http://example.com/myicon.ico' }
   Tests << { html: %Q{<link rel="icon" href="http://example.com/image.ico" />}, value: 'http://example.com/image.ico' }
@@ -31,7 +32,8 @@ require 'ficon'
 class FiconTest < Test::Unit::TestCase
   def test_html_chunks
     Tests.each do |t|
-      assert Ficon.from_page( t[:html] )[0] == t[:value], "Seaching |#{t[:html]}| expected #{t[:value]}" 
+      result = Ficon.from_page( t[:html] )[0]
+      assert result == t[:value], "Seaching |#{t[:html]}| expected #{t[:value]}, got #{result}" 
     end
   end
 end

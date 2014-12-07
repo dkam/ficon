@@ -80,8 +80,9 @@ module Ficon
       raise ArgumentError 
     end
 
-    doc.xpath("//meta[@property='og:image']|//meta[@name='msapplication-TileImage']|//link[@type='image/ico' or @type='image/vnd.microsoft.icon']|//link[@rel='icon' or @rel='shortcut icon' or @rel='apple-touch-icon-precomposed' or @rel='apple-touch-icon']").collect {|e| e.values.select {|v|  v =~ /\.png$|\.jpg$|\.gif$|\.ico$|\.svg$/ }}.flatten
-
+    doc.xpath("//meta[@property='og:image']|//meta[@name='msapplication-TileImage']|//link[@type='image/ico' or @type='image/vnd.microsoft.icon']|//link[@rel='icon' or @rel='shortcut icon' or @rel='apple-touch-icon-precomposed' or @rel='apple-touch-icon']").
+      collect {|e| e.values.select {|v|  v =~ /\.png$|\.jpg$|\.gif$|\.ico$|\.svg$/ }}.flatten.
+      collect {|v| v[/^http/] || v[/^\//]  ? v : '/' + v  }
   end
 
   def self.normalise(base, candidate)
