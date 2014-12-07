@@ -21,6 +21,14 @@ Or install it yourself as:
     irb(main)> Ficon.from_uri "https://facebook.com"
     => ["https://www.facebook.com/images/fb_icon_325x325.png", "https://fbstatic-a.akamaihd.net/rsrc.php/yV/r/hzMapiNYYpW.ico", "https://www.facebook.com/favicon.ico"]
 
+Or form the shell:
+
+    $ ficon https://facebook.com
+    https://www.facebook.com/images/fb_icon_325x325.png
+    https://fbstatic-a.akamaihd.net/rsrc.php/yV/r/hzMapiNYYpW.ico
+    https://www.facebook.com/favicon.ico
+    
+
 ## Todo
 
 When returning a win8-tile, should probably test if there's a colour assocaited with it. EG, twitter returns:
