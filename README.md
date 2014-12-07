@@ -29,16 +29,6 @@ Or form the shell:
     https://www.facebook.com/favicon.ico
     
 
-## Todo
-
-When returning a win8-tile, should probably test if there's a colour assocaited with it. EG, twitter returns:
-
-````html
-<meta name="msapplication-TileImage" content="//abs.twimg.com/favicons/win8-tile-144.png"/>
-<meta name="msapplication-TileColor" content="#00aced"/>
-````
-
-
 ## Contributing
 
 1. Fork it ( https://github.com/dkam/ficon/fork )
