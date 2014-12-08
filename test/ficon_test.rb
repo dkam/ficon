@@ -16,17 +16,19 @@ require 'ficon'
   Tests << { html: %Q{<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/wp-content/themes/torrentfreakredux/assets/img/icons/114.png">}, value: '/wp-content/themes/torrentfreakredux/assets/img/icons/114.png' }
   Tests << { html: %Q{<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/wp-content/themes/torrentfreakredux/assets/img/icons/72.png">}, value: '/wp-content/themes/torrentfreakredux/assets/img/icons/72.png' }
   Tests << { html: %Q{<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/wp-content/themes/torrentfreakredux/assets/img/icons/144.png">}, value: '/wp-content/themes/torrentfreakredux/assets/img/icons/144.png' }
-  Tests << { html: %Q{<link rel="shortcut icon" href="/favicon.png">}, value: '/favicon.png' }
-  Tests << { html: %Q{<link rel="shortcut icon" href="favicon.ico" />}, value: '/favicon.ico'           }
-  Tests << { html: %Q{<link rel="apple-touch-icon" href="/apple-touch-icon.png">}, value: '/apple-touch-icon.png' }
-  Tests << { html: %Q{<link rel="shortcut icon" href="http://example.com/myicon.ico" />}, value: 'http://example.com/myicon.ico' }
-  Tests << { html: %Q{<link rel="icon" href="http://example.com/image.ico" />}, value: 'http://example.com/image.ico' }
-  Tests << { html: %Q{<link rel="icon" type="image/vnd.microsoft.icon" href="http://example.com/image.ico" />}, value: 'http://example.com/image.ico' }
-  Tests << { html: %Q{<link rel="icon" type="image/png" href="http://example.com/image.png" />}, value: 'http://example.com/image.png' }
-  Tests << { html: %Q{<link rel="icon" type="image/gif"  href="http://example.com/image.gif" />}, value: 'http://example.com/image.gif' }
-  Tests << { html: %Q{<link rel="icon" type="image/x-icon" href="http://example.com/image.ico"/>}, value: 'http://example.com/image.ico' }
+  Tests << { html: %Q{<link rel="shortcut icon" href="/favicon.png">},                                                    value: '/favicon.png'                 }
+  Tests << { html: %Q{<link rel="shortcut icon" href="favicon.ico" />},                                                   value: '/favicon.ico'                 }
+  Tests << { html: %Q{<link rel="apple-touch-icon" href="/apple-touch-icon.png">},                                        value: '/apple-touch-icon.png'        }
+  Tests << { html: %Q{<link rel="shortcut icon" href="http://example.com/myicon.ico" />},                                 value: 'http://example.com/myicon.ico'}
+  Tests << { html: %Q{<link rel="icon" href="http://example.com/image.ico" />},                                           value: 'http://example.com/image.ico' }
+  Tests << { html: %Q{<link rel="icon" type="image/vnd.microsoft.icon" href="http://example.com/image.ico" />},           value: 'http://example.com/image.ico' }
+  Tests << { html: %Q{<link rel="icon" type="image/png" href="http://example.com/image.png" />},                          value: 'http://example.com/image.png' }
+  Tests << { html: %Q{<link rel="icon" type="image/gif"  href="http://example.com/image.gif" />},                         value: 'http://example.com/image.gif' }
+  Tests << { html: %Q{<link rel="icon" type="image/x-icon" href="http://example.com/image.ico"/>},                        value: 'http://example.com/image.ico' }
   Tests << { html: %Q{<link rel="shortcut icon" href="https://fbstatic-a.akamaihd.net/rsrc.php/yl/r/H3nktOa7ZMg.ico" />}, value: 'https://fbstatic-a.akamaihd.net/rsrc.php/yl/r/H3nktOa7ZMg.ico' }
-  Tests << { html: %Q{<meta property="og:image" content="https://www.facebook.com/images/fb_icon_325x325.png" />}, value: 'https://www.facebook.com/images/fb_icon_325x325.png'           }
+  Tests << { html: %Q{<meta property="og:image" content="https://www.facebook.com/images/fb_icon_325x325.png" />},        value: 'https://www.facebook.com/images/fb_icon_325x325.png'           }
+  Tests << { html: %Q{<link rel="icon" type="image/vnd.microsoft.icon" href="/viconline/img/favicon.ico?1393375504" />},  value: '/viconline/img/favicon.ico?1393375504' }
+  Tests << { html: %Q{<link rel="shortcut icon" type="image/x-icon" href="/viconline/img/favicon.ico?1393375504" />},     value: '/viconline/img/favicon.ico?1393375504'    }
 
 
 class FiconTest < Test::Unit::TestCase

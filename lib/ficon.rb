@@ -53,8 +53,11 @@ module Ficon
 
     probe = Net::HTTP.new(uri.host).request_head("/")
     if probe.code == "301" || probe.code == "302"
-      uri = URI(probe.header["Location"])
-      uri.path = ""
+      new_uri = URI(probe.header["Location"])
+      if ! new_uri.host.nil?
+        uri = new_uri
+        uri.path = ""
+      end
     end
 
     results = []
@@ -81,7 +84,7 @@ module Ficon
     end
 
     doc.xpath("//meta[@property='og:image']|//meta[@name='msapplication-TileImage']|//link[@type='image/ico' or @type='image/vnd.microsoft.icon']|//link[@rel='icon' or @rel='shortcut icon' or @rel='apple-touch-icon-precomposed' or @rel='apple-touch-icon']").
-      collect {|e| e.values.select {|v|  v =~ /\.png$|\.jpg$|\.gif$|\.ico$|\.svg$/ }}.flatten.
+      collect {|e| e.values.select {|v|  v =~ /\.png$|\.jpg$|\.gif$|\.ico$|\.svg$|\.ico\?\d*$/ }}.flatten.
       collect {|v| v[/^http/] || v[/^\//]  ? v : '/' + v  }
   end
 
