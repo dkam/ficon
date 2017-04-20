@@ -1,29 +1,39 @@
-require "ficon/version"
-
 require 'open-uri'
 require 'nokogiri'
 require 'uri'
-require 'net/http'
+require "ostruct"
+require 'addressable/uri'
+require 'byebug'
+
+require_relative 'ficon/version'
+require_relative 'ficon/image'
+require_relative 'ficon/cache'
 
 module Ficon
-  def self.from_uri(_uri)
+  class Site
 
-    uri = nil
-    doc = nil
-
-    begin
-      require 'addressable/uri'
-      uri = Addressable::URI.heuristic_parse(_uri)
-    rescue LoadError
-      uri = URI(_uri)
+    attr_reader :site
+    def initialize(uri)
+      @uri = Addressable::URI.heuristic_parse(uri)
+      @site = OpenStruct.new
+      process
     end
 
-    begin
-      data = open(uri)
-      doc = Nokogiri::HTML(data)
+    def doc
+      cache = Cache.new(@uri)
 
-      uri = data.base_uri 
-
+      @data ||= cache.data 
+      
+      if @data.nil?
+        @data =  open(@uri)
+        cache.data       = @data.read
+        cache.etag       = @data.meta['etag']           if @data.respond_to?(:meta)
+        cache.not_before = @data.meta['last-modified']  if @data.respond_to?(:meta)
+        @data.rewind
+      end
+      
+      @doc  ||= Nokogiri::HTML(@data)
+      return @doc
     rescue OpenURI::HTTPError, SocketError => e
       puts "OpenURI:  #{e.inspect}"
       return nil
@@ -40,60 +50,65 @@ module Ficon
       return nil
     end
 
-    results = from_page(doc).collect {|result| normalise(uri, result) }.uniq
 
-    results.concat( from_probes(uri, results) )
-
-    return results
-  end
-
-  def self.from_probes(uri, already_found=[])
-    
-    # Check if root domain redirects before probing, striping path - eg http://www.apple.com.au/ -> http://www.apple.com/au/
-
-    probe = Net::HTTP.new(uri.host).request_head("/")
-    if probe.code == "301" || probe.code == "302"
-      new_uri = URI(probe.header["Location"])
-      if ! new_uri.host.nil?
-        uri = new_uri
-        uri.path = ""
-      end
+    def process
+      @site.images      = Site.site_images(@uri, doc)||[]
+      @site.page_images = Site.page_images(@uri, doc)||[]
+      other_page_data
     end
 
-    results = []
-    guesses = ["/favicon.ico", "/favicon.png"]
+    def report
+      r  = "Site icon: #{@site.images.first.to_s}\n"
+      r += "Page icon: #{@site.page_images.first.to_s}\n"
+      r += "Page title: #{@site.title}\n"
+      r += "Page description: #{@site.description}\n"
+      r += "Canonical URL: #{@site.canonical}\n"
 
-    guesses.each do |guess|
-      uri.path = guess
-      unless already_found.include?( uri.to_s )
-        results <<  uri.to_s  if( Net::HTTP.new(uri.host).request_head(uri.path).header.code == "200")
-      end
+      return r
     end
 
-    return results
-  end
-
-  def self.from_page(page)
-    doc = nil
-    if page.is_a? String
-      doc = Nokogiri::HTML(page) 
-    elsif page.is_a? Nokogiri::HTML::Document
-      doc = page 
-    else
-      raise ArgumentError 
+    def other_page_data
+      @site.title       = doc.at_xpath("//meta[@property='og:title']/@content")&.value ||  @doc.at_xpath("//title")&.text&.strip
+      @site.description = doc.at_xpath("//meta[@property='og:description']/@content")&.value
+      canonical   = doc.at_xpath("//link[@rel='canonical']/@href")&.value
+      @site.canonical   = canonical unless canonical == @url
     end
 
-    doc.xpath("//meta[@property='og:image']|//meta[@name='msapplication-TileImage']|//link[@type='image/ico' or @type='image/vnd.microsoft.icon']|//link[@rel='icon' or @rel='shortcut icon' or @rel='apple-touch-icon-precomposed' or @rel='apple-touch-icon']").
-      collect {|e| e.values.select {|v|  v =~ /\.png$|\.jpg$|\.gif$|\.ico$|\.svg$|\.ico\?\d*$/ }}.flatten.
-      collect {|v| v[/^http/] || v[/^\//]  ? v : '/' + v  }
-  end
+    def self.site_images(uri, doc, site=nil)
+      results = []
+      guesses = ["/favicon.ico", "/favicon.png"]
 
-  def self.normalise(base, candidate)
-      parsed_candidate = URI(candidate); 
-      
-      parsed_candidate.host   = base.host if parsed_candidate.host.nil?      # Set relative URLs to absolute
-      parsed_candidate.scheme = base.scheme if parsed_candidate.scheme.nil?  # Set the schema if missing
+      already_found = site&.images||[]
 
-      parsed_candidate.to_s
+      #guesses.each do |guess|
+      #  uri.path = guess
+      #  unless already_found.include?( uri.to_s )
+      #    results <<  Image.new(uri.to_s)  if( Net::HTTP.new(uri.host).request_head(uri.path).header.code == "200")
+      #  end
+      #end
+
+      paths = "//meta[@name='msapplication-TileImage']|//link[@type='image/ico' or @type='image/vnd.microsoft.icon']|//link[@rel='icon' or @rel='shortcut icon' or @rel='apple-touch-icon-precomposed' or @rel='apple-touch-icon']"
+      results += doc.xpath(paths).collect {|e| e.values.select {|v|  v =~ /\.png$|\.jpg$|\.gif$|\.ico$|\.svg$|\.ico\?\d*$/ }}.flatten.collect {|v| v[/^http/] || v[/^\//]  ? v : '/' + v  }
+
+      results =  results.collect {|result| normalise(uri, result)}.uniq.collect {|i| Image.new(i) }.sort {|a,b| a.area <=> b.area }.reverse
+    end
+
+    def self.page_images(uri, doc, site=nil)
+      doc.xpath("//meta[@property='og:image']").
+        collect {|e| e.values.select {|v|  v =~ /\.png$|\.jpg$|\.gif$|\.ico$|\.svg$|\.ico\?\d*$/ }}.flatten.
+        collect {|v| v[/^http/] || v[/^\//]  ? v : '/' + v  }.collect {|result| normalise(uri, result)}.uniq.collect {|i| Image.new(i)}.sort {|a, b| a.area <=> b.area }.reverse
+    end
+
+    def self.normalise(base, candidate)
+        parsed_candidate = URI(candidate); 
+        base = URI(base) unless base.is_a? URI
+        
+        parsed_candidate.host   = base.host if parsed_candidate.host.nil?      # Set relative URLs to absolute
+        parsed_candidate.scheme = base.scheme if parsed_candidate.scheme.nil?  # Set the schema if missing
+
+        parsed_candidate.to_s
+    end
+
+
   end
-end
+end 
