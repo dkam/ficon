@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+$:.unshift File.join( File.dirname(__FILE__), "/../lib")
 require 'ficon'
+include Ficon
 
-puts Ficon.from_uri ARGV[0] 
+puts Site.new(ARGV[0]).report
