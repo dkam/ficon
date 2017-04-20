@@ -84,16 +84,6 @@ module Ficon
 
     def self.site_images(uri, doc, site=nil)
       results = []
-      guesses = ["/favicon.ico", "/favicon.png"]
-
-      already_found = site&.images||[]
-
-      #guesses.each do |guess|
-      #  uri.path = guess
-      #  unless already_found.include?( uri.to_s )
-      #    results <<  Image.new(uri.to_s)  if( Net::HTTP.new(uri.host).request_head(uri.path).header.code == "200")
-      #  end
-      #end
 
       paths = "//meta[@name='msapplication-TileImage']|//link[@type='image/ico' or @type='image/vnd.microsoft.icon']|//link[@rel='icon' or @rel='shortcut icon' or @rel='apple-touch-icon-precomposed' or @rel='apple-touch-icon']"
       results += doc.xpath(paths).collect {|e| e.values.select {|v|  v =~ /\.png$|\.jpg$|\.gif$|\.ico$|\.svg$|\.ico\?\d*$/ }}.flatten.collect {|v| v[/^http/] || v[/^\//]  ? v : '/' + v  }
