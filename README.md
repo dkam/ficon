@@ -18,8 +18,12 @@ Or install it yourself as:
 
 ## Usage
 
-    irb(main)> Ficon.from_uri "https://facebook.com"
-    => ["https://www.facebook.com/images/fb_icon_325x325.png", "https://fbstatic-a.akamaihd.net/rsrc.php/yV/r/hzMapiNYYpW.ico", "https://www.facebook.com/favicon.ico"]
+    irb(main)> Ficon::Site.new('https://booko.info/9780748109999').site_icons.first.url
+    => "https://booko.info/favicon-196x196.png"
+
+    irb(main):008:0> Ficon::Site.new('https://booko.info/9780748109999').page_images.first.url
+    => "https://covers.booko.com.au/9780748109999.jpg"
+
 
 Or form the shell:
 
