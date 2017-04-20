@@ -67,6 +67,14 @@ module Ficon
       return r
     end
 
+    def site_icons
+      @site.images
+    end
+
+    def page_images
+      @site.page_images
+    end
+
     def other_page_data
       @site.title       = doc.at_xpath("//meta[@property='og:title']/@content")&.value ||  @doc.at_xpath("//title")&.text&.strip
       @site.description = doc.at_xpath("//meta[@property='og:description']/@content")&.value
