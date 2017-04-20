@@ -75,6 +75,14 @@ module Ficon
       @site.page_images
     end
 
+    def title
+      @site.title
+    end
+
+    def description
+      @site.description
+    end
+
     def other_page_data
       @site.title       = doc.at_xpath("//meta[@property='og:title']/@content")&.value ||  @doc.at_xpath("//title")&.text&.strip
       @site.description = doc.at_xpath("//meta[@property='og:description']/@content")&.value
