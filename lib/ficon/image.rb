@@ -15,7 +15,7 @@ module Ficon
     end
 
     def to_s
-      @url.to_s +  "(#{@size})"
+      @url.to_s +  " (#{@size})"
     end
   end
 end
