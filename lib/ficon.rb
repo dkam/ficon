@@ -26,7 +26,7 @@ module Ficon
       
       if @data.nil?
         @data =  open(@uri)
-        cache.data       = @data.read
+        cache.data       = @data.read.force_encoding('UTF-8')
         cache.etag       = @data.meta['etag']           if @data.respond_to?(:meta)
         cache.not_before = @data.meta['last-modified']  if @data.respond_to?(:meta)
         @data.rewind
