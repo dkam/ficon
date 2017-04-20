@@ -21,11 +21,17 @@ Or install it yourself as:
     irb(main)> Ficon::Site.new('https://booko.info/9780748109999').site_icons.first.url
     => "https://booko.info/favicon-196x196.png"
 
-    irb(main):008:0> Ficon::Site.new('https://booko.info/9780748109999').page_images.first.url
+    irb(main)> Ficon::Site.new('https://booko.info/9780748109999').page_images.first.url
     => "https://covers.booko.com.au/9780748109999.jpg"
 
+    irb(main)> site = Ficon::Site.new('https://booko.info/9780748109999')
+    => "Prices for Consider Phlebas by Iain M. Banks"
+    irb(main):010:0> f.site.description
+    => "Prices (including delivery) for Consider Phlebas by Iain M. Banks range from $12.40 at Blackwell's up to $12.99."
 
-Or form the shell:
+
+
+Or from the shell:
 
     $ ficon https://booko.info/9780748109999
     Site icon: https://booko.info/favicon-196x196.png([196, 196])
