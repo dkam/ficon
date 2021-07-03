@@ -55,6 +55,7 @@ module Ficon
       @site.images      = Site.site_images(@uri, doc)||[]
       @site.page_images = Site.page_images(@uri, doc)||[]
       other_page_data
+      return
     end
 
     def report
