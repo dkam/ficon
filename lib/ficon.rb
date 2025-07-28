@@ -49,22 +49,6 @@ class Ficon
     nil
   end
 
-  private
-
-  def fetch_url(uri)
-    uri = URI(uri) unless uri.is_a?(URI)
-    
-    Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
-      http.read_timeout = 10
-      http.open_timeout = 5
-      request = Net::HTTP::Get.new(uri)
-      http.request(request)
-    end
-  rescue Net::HTTPError, SocketError, Timeout::Error => e
-    puts "Failed to fetch #{uri}: #{e.inspect}"
-    nil
-  end
-
   def process
     @site[:images] = self.class.site_images(@uri, doc) || []
     @site[:page_images] = self.class.page_images(@uri, doc) || []
@@ -123,7 +107,7 @@ class Ficon
 
   def self.page_images(uri, doc)
     doc.xpath("//meta[@property='og:image']")
-      .collect { |e| e.values.select { |v| v =~ /\.png$|\.jpg$|\.gif$|\.ico$|\.svg$|\.ico\?\d*$/ } }.flatten
+      .collect { |e| e.values.reject(&:empty?) }.flatten
       .collect { |v| (v[/^http/] || v[/^\//]) ? v : "/" + v }.collect { |result| normalise(uri, result) }.uniq.collect { |i| Image.new(i) }.sort_by(&:area).reverse
   end
 
@@ -135,5 +119,29 @@ class Ficon
     parsed_candidate.scheme = base.scheme if parsed_candidate.scheme.nil?  # Set the schema if missing
 
     parsed_candidate.to_s
+  end
+
+  private
+
+  def fetch_url(uri)
+    uri = URI(uri) unless uri.is_a?(URI)
+    
+    Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
+      http.read_timeout = 10
+      http.open_timeout = 5
+      request = Net::HTTP::Get.new(uri)
+      request['User-Agent'] = "Ficon/#{VERSION} (Ruby icon finder; https://github.com/dkam/ficon)"
+      http.request(request)
+    end
+  rescue Net::HTTPError, SocketError, Timeout::Error => e
+    puts "Failed to fetch #{uri}: #{e.inspect}"
+    nil
+  end
+
+  def other_page_data
+    @site[:title] = doc.at_xpath("//meta[@property='og:title']/@content")&.value || @doc.at_xpath("//title")&.text&.strip
+    @site[:description] = doc.at_xpath("//meta[@property='og:description']/@content")&.value
+    canonical = doc.at_xpath("//link[@rel='canonical']/@href")&.value
+    @site[:canonical] = canonical unless canonical == @url
   end
 end
