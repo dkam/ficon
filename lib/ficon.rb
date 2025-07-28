@@ -89,11 +89,18 @@ class Ficon
 
   def self.site_images(uri, doc)
     results = []
+    
+    # Get tile color for Windows tiles
+    tile_color = doc.at_xpath("//meta[@name='msapplication-TileColor']/@content")&.value
 
     paths = "//meta[@name='msapplication-TileImage']|//link[@type='image/ico' or @type='image/vnd.microsoft.icon']|//link[@rel='icon' or @rel='shortcut icon' or @rel='apple-touch-icon-precomposed' or @rel='apple-touch-icon']"
     results += doc.xpath(paths).collect { |e| e.values.select { |v| v =~ /\.png$|\.jpg$|\.gif$|\.ico$|\.svg$|\.ico\?\d*$/ } }.flatten.collect { |v| (v[/^http/] || v[/^\//]) ? v : "/" + v }
 
-    results.collect { |result| normalise(uri, result) }.uniq.collect { |i| Image.new(i) }.sort_by(&:area).reverse
+    results.collect { |result| normalise(uri, result) }.uniq.collect do |url|
+      # Check if this is a tile image to pass the color
+      is_tile = doc.at_xpath("//meta[@name='msapplication-TileImage' and @content='#{url}' or @content='#{url.sub(uri.to_s, '')}']")
+      Image.new(url, is_tile ? tile_color : nil)
+    end.sort_by(&:area).reverse
   end
 
   def self.page_images(uri, doc)

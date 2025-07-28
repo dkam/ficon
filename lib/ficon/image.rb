@@ -6,9 +6,10 @@ class Ficon
   class Image
     require "fastimage"
 
-    attr_reader :url, :size, :area
-    def initialize(url)
+    attr_reader :url, :size, :area, :tile_color
+    def initialize(url, tile_color = nil)
       @url = url
+      @tile_color = tile_color
       c = Cache.new(@url)
       cached_size = Cache.new(url).data
       @size = cached_size ? JSON.parse(cached_size) : FastImage.size(url)
@@ -17,7 +18,9 @@ class Ficon
     end
 
     def to_s
-      @url.to_s + " (#{@size})"
+      result = @url.to_s + " (#{@size})"
+      result += " [#{@tile_color}]" if @tile_color
+      result
     end
   end
 end

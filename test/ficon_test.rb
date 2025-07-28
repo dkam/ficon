@@ -29,6 +29,7 @@ require 'ficon'
   SiteTests << { html: %Q{<link rel="shortcut icon" href="https://fbstatic-a.akamaihd.net/rsrc.php/yl/r/H3nktOa7ZMg.ico" />}, value: 'https://fbstatic-a.akamaihd.net/rsrc.php/yl/r/H3nktOa7ZMg.ico' }
   SiteTests << { html: %Q{<link rel="icon" type="image/vnd.microsoft.icon" href="/viconline/img/favicon.ico?1393375504" />},  value: 'https://site.com/viconline/img/favicon.ico?1393375504' }
   SiteTests << { html: %Q{<link rel="shortcut icon" type="image/x-icon" href="/viconline/img/favicon.ico?1393375504" />},     value: 'https://site.com/viconline/img/favicon.ico?1393375504'    }
+  SiteTests << { html: %Q{<meta name="msapplication-TileImage" content="/win8-tile-144.png"/><meta name="msapplication-TileColor" content="#00aced"/>}, value: 'https://site.com/win8-tile-144.png' }
 
   PageTests = []
   PageTests << { html: %Q{<meta property="og:image" content="https://www.facebook.com/images/fb_icon_325x325.png" />},        value: 'https://www.facebook.com/images/fb_icon_325x325.png'           }
@@ -45,5 +46,12 @@ class FiconTest < Minitest::Test
       result = Ficon.page_images('https://site.com', Nokogiri::HTML(t[:html]) )[0]
       assert result&.url == t[:value], "Seaching |#{t[:html]}| expected #{t[:value]}, got #{result}" 
     end
+  end
+
+  def test_tile_color_extraction
+    html = %Q{<meta name="msapplication-TileImage" content="/win8-tile-144.png"/><meta name="msapplication-TileColor" content="#00aced"/>}
+    result = Ficon.site_images('https://site.com', Nokogiri::HTML(html))[0]
+    assert_equal 'https://site.com/win8-tile-144.png', result.url
+    assert_equal '#00aced', result.tile_color
   end
 end
