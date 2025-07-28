@@ -1,17 +1,16 @@
-require 'sqlite3'
+require "sqlite3"
 
 class Ficon
-
   class Cache
     def initialize(url)
       @url = url.to_s
-      Cache.setup_cache(db) if db.execute( "SELECT name FROM sqlite_master WHERE type='table' AND name='urls'" ).length == 0
+      Cache.setup_cache(db) if db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='urls'").length == 0
     end
 
     def db
       _db = SQLite3::Database.new Cache.db_file
-      _db.busy_timeout=1000
-      return _db
+      _db.busy_timeout = 1000
+      _db
     end
 
     def data
@@ -42,10 +41,10 @@ class Ficon
     end
 
     def self.db_file
-      if ENV['FICON_DB'].nil?
-        File.expand_path('~/.ficon.db')
+      if ENV["FICON_DB"].nil?
+        File.expand_path("~/.ficon.db")
       else
-        ENV['FICON_DB']
+        ENV["FICON_DB"]
       end
     end
 
@@ -53,9 +52,5 @@ class Ficon
       db.execute("CREATE TABLE urls(url, etag, not_before, data)")
       db.execute("CREATE UNIQUE INDEX `url` ON `urls` (`url`)")
     end
-
   end
 end
-
-
-
