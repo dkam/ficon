@@ -12,6 +12,7 @@ Gem::Specification.new do |spec|
   spec.description   = %q{Ficon finds icons for websites and optionally, the best icon}
   spec.homepage      = "https://github.com/dkam/ficon"
   spec.license       = "MIT"
+  spec.required_ruby_version = ">= 3.0"
 
   spec.files         = `git ls-files -z`.split("\x0")
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
@@ -23,7 +24,7 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency 'fastimage', "~> 2.3"
   spec.add_runtime_dependency 'sqlite3', "~> 2.0"
 
-  spec.add_development_dependency "bundler", ">= 1.0"
+  spec.add_development_dependency "bundler", "~> 2.0"
   spec.add_development_dependency "rake", "~> 13.0"
   spec.add_development_dependency "minitest", "~> 5.0"
   spec.add_development_dependency "debug", "~> 1.0"
