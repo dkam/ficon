@@ -69,21 +69,15 @@ class Ficon
     REPORT
   end
 
-  def site_icons
-    @site[:images]
-  end
+  def site_icons = @site[:images]
 
-  def page_images
-    @site[:page_images]
-  end
+  def page_images = @site[:page_images]
 
-  def title
-    @site[:title]
-  end
+  def page_image = page_images&.first
 
-  def description
-    @site[:description]
-  end
+  def title = @site[:title]
+
+  def description = @site[:description]
 
   def other_page_data
     @site[:title] = doc.at_xpath("//meta[@property='og:title']/@content")&.value || @doc.at_xpath("//title")&.text&.strip
