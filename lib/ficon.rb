@@ -10,9 +10,12 @@ require_relative "ficon/cache"
 
 class Ficon
   attr_reader :site
-  def initialize(uri)
+  attr_accessor :user_agent
+
+  def initialize(uri, user_agent: nil)
     @uri = Addressable::URI.heuristic_parse(uri)
     @site = {}
+    @user_agent = user_agent || "Ficon/#{VERSION} (Ruby icon finder; https://github.com/dkam/ficon)"
     process
   end
 
@@ -24,7 +27,7 @@ class Ficon
     if @data.nil?
       response = fetch_url(@uri)
       return nil unless response
-      
+
       @data = response.body.force_encoding("UTF-8")
       cache.data = @data
       cache.etag = response["etag"] if response["etag"]
@@ -91,7 +94,7 @@ class Ficon
 
   def self.site_images(uri, doc)
     results = []
-    
+
     # Get tile color for Windows tiles
     tile_color = doc.at_xpath("//meta[@name='msapplication-TileColor']/@content")&.value
 
@@ -100,7 +103,7 @@ class Ficon
 
     results.collect { |result| normalise(uri, result) }.uniq.collect do |url|
       # Check if this is a tile image to pass the color
-      is_tile = doc.at_xpath("//meta[@name='msapplication-TileImage' and @content='#{url}' or @content='#{url.sub(uri.to_s, '')}']")
+      is_tile = doc.at_xpath("//meta[@name='msapplication-TileImage' and @content='#{url}' or @content='#{url.sub(uri.to_s, "")}']")
       Image.new(url, is_tile ? tile_color : nil)
     end.sort_by(&:area).reverse
   end
@@ -125,23 +128,16 @@ class Ficon
 
   def fetch_url(uri)
     uri = URI(uri) unless uri.is_a?(URI)
-    
-    Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
+
+    Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
       http.read_timeout = 10
       http.open_timeout = 5
       request = Net::HTTP::Get.new(uri)
-      request['User-Agent'] = "Ficon/#{VERSION} (Ruby icon finder; https://github.com/dkam/ficon)"
+      request["User-Agent"] = @user_agent
       http.request(request)
     end
   rescue Net::HTTPError, SocketError, Timeout::Error => e
     puts "Failed to fetch #{uri}: #{e.inspect}"
     nil
-  end
-
-  def other_page_data
-    @site[:title] = doc.at_xpath("//meta[@property='og:title']/@content")&.value || @doc.at_xpath("//title")&.text&.strip
-    @site[:description] = doc.at_xpath("//meta[@property='og:description']/@content")&.value
-    canonical = doc.at_xpath("//link[@rel='canonical']/@href")&.value
-    @site[:canonical] = canonical unless canonical == @url
   end
 end

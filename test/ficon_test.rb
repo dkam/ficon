@@ -54,4 +54,19 @@ class FiconTest < Minitest::Test
     assert_equal 'https://site.com/win8-tile-144.png', result.url
     assert_equal '#00aced', result.tile_color
   end
+
+  def test_custom_user_agent
+    # Test default user agent
+    ficon_default = Ficon.new('https://example.com')
+    assert_match(/^Ficon\/0\.2/, ficon_default.user_agent)
+    
+    # Test custom user agent
+    custom_agent = 'MyApp/1.0 (Custom Bot)'
+    ficon_custom = Ficon.new('https://example.com', user_agent: custom_agent)
+    assert_equal custom_agent, ficon_custom.user_agent
+    
+    # Test user agent can be changed after initialization
+    ficon_custom.user_agent = 'Changed/2.0'
+    assert_equal 'Changed/2.0', ficon_custom.user_agent
+  end
 end
