@@ -9,25 +9,28 @@ require_relative "ficon/image"
 require_relative "ficon/cache"
 
 class Ficon
-  attr_reader :site
+  attr_reader :site, :final_uri
   attr_accessor :user_agent
 
   def initialize(uri, user_agent: nil)
     @uri = Addressable::URI.heuristic_parse(uri)
+    @final_uri = @uri
     @site = {}
     @user_agent = user_agent || "Ficon/#{VERSION} (Ruby icon finder; https://github.com/dkam/ficon)"
     process
   end
 
   def doc
-    cache = Cache.new(@uri)
+    # First try to fetch to determine final URL
+    response = fetch_url(@uri) unless @data
+    return nil if response.nil? && @data.nil?
+
+    # Use final URL for caching
+    cache = Cache.new(@final_uri)
 
     @data ||= cache.data
 
-    if @data.nil?
-      response = fetch_url(@uri)
-      return nil unless response
-
+    if @data.nil? && response
       @data = response.body.force_encoding("UTF-8")
       cache.data = @data
       cache.etag = response["etag"] if response["etag"]
@@ -60,16 +63,19 @@ class Ficon
   end
 
   def report
-    <<~REPORT
-      Site icon: #{@site[:images].first}
-      Page icon: #{@site[:page_images].first}
-      Page title: #{@site[:title]}
-      Page description: #{@site[:description]}
-      Canonical URL: #{@site[:canonical]}
-    REPORT
+    report_lines = []
+    report_lines << "Site icon: #{@site[:images].first}"
+    report_lines << "Page icon: #{@site[:page_images].first}"
+    report_lines << "Page title: #{@site[:title]}"
+    report_lines << "Page description: #{@site[:description]}"
+    report_lines << "Final URL: #{@final_uri}" if @final_uri.to_s != @uri.to_s
+    report_lines << "Canonical URL: #{@site[:canonical]}" if @site[:canonical]
+    report_lines.join("\n") + "\n"
   end
 
   def site_icons = @site[:images]
+
+  def site_icon = site_icons&.first
 
   def page_images = @site[:page_images]
 
@@ -120,15 +126,31 @@ class Ficon
 
   private
 
-  def fetch_url(uri)
+  def fetch_url(uri, redirect_limit = 5)
     uri = URI(uri) unless uri.is_a?(URI)
+
+    raise "Too many redirects" if redirect_limit <= 0
 
     Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
       http.read_timeout = 10
       http.open_timeout = 5
       request = Net::HTTP::Get.new(uri)
       request["User-Agent"] = @user_agent
-      http.request(request)
+      response = http.request(request)
+
+      case response
+      when Net::HTTPRedirection
+        location = response["location"]
+        if location
+          new_uri = URI.join(uri.to_s, location)
+          @final_uri = Addressable::URI.parse(new_uri.to_s)
+          return fetch_url(new_uri, redirect_limit - 1)
+        end
+      else
+        @final_uri = Addressable::URI.parse(uri.to_s)
+      end
+
+      response
     end
   rescue Net::HTTPError, SocketError, Timeout::Error => e
     puts "Failed to fetch #{uri}: #{e.inspect}"
