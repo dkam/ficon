@@ -64,9 +64,15 @@ class Ficon
   end
 
   def process
-    @site[:images] = self.class.site_images(@uri, doc) || []
-    @site[:page_images] = self.class.page_images(@uri, doc) || []
-    other_page_data
+    document = doc
+    if document
+      @site[:images] = self.class.site_images(@uri, document) || []
+      @site[:page_images] = self.class.page_images(@uri, document) || []
+      other_page_data(document)
+    else
+      @site[:images] = []
+      @site[:page_images] = []
+    end
     nil
   end
 
@@ -82,13 +88,9 @@ class Ficon
     report_lines.join("\n") + "\n"
   end
 
-  def site_icons = @site[:images]
+  def site_icons = @site[:images] || []
 
-  def site_icon = site_icons&.first
-
-  def page_images = @site[:page_images]
-
-  def page_image = page_images&.first
+  def page_images = @site[:page_images] || []
 
   def title = @site[:title]
 
@@ -98,11 +100,11 @@ class Ficon
     Cache.clear_cache
   end
 
-  def other_page_data
-    @site[:title] = doc.at_xpath("//meta[@property='og:title']/@content")&.value || @doc.at_xpath("//title")&.text&.strip
-    @site[:description] = doc.at_xpath("//meta[@property='og:description']/@content")&.value
-    canonical = doc.at_xpath("//link[@rel='canonical']/@href")&.value
-    @site[:canonical] = canonical unless canonical == @url
+  def other_page_data(document)
+    @site[:title] = document.at_xpath("//meta[@property='og:title']/@content")&.value || document.at_xpath("//title")&.text&.strip
+    @site[:description] = document.at_xpath("//meta[@property='og:description']/@content")&.value
+    canonical = document.at_xpath("//link[@rel='canonical']/@href")&.value
+    @site[:canonical] = canonical unless canonical == @uri.to_s
   end
 
   def self.site_images(uri, doc)
@@ -135,6 +137,34 @@ class Ficon
     parsed_candidate.scheme = base.scheme if parsed_candidate.scheme.nil?  # Set the schema if missing
 
     parsed_candidate.to_s
+  end
+
+  def classify_response_status(response)
+    case response.code.to_i
+    when 200..299
+      ALIVE
+    when 404, 410
+      DEAD
+    when 401, 403, 429
+      BLOCKED
+    when 500..599
+      SICK
+    else
+      SICK
+    end
+  end
+
+  def classify_exception_status(exception)
+    case exception
+    when SocketError, Resolv::ResolvError
+      DEAD  # DNS resolution failures
+    when Net::HTTPError, Timeout::Error, Errno::ECONNREFUSED
+      SICK  # Network issues worth retrying
+    when OpenSSL::SSL::SSLError
+      SICK  # SSL certificate errors
+    else
+      SICK  # Default to retryable for unknown errors
+    end
   end
 
   private
@@ -175,33 +205,5 @@ class Ficon
     @url_status = classify_exception_status(e)
     puts "Failed to fetch #{uri}: #{e.inspect}"
     nil
-  end
-
-  def classify_response_status(response)
-    case response.code.to_i
-    when 200..299
-      ALIVE
-    when 404, 410
-      DEAD
-    when 401, 403, 429
-      BLOCKED
-    when 500..599
-      SICK
-    else
-      SICK
-    end
-  end
-
-  def classify_exception_status(exception)
-    case exception
-    when SocketError, Resolv::ResolutionError
-      DEAD  # DNS resolution failures
-    when Net::HTTPError, Timeout::Error, Errno::ECONNREFUSED
-      SICK  # Network issues worth retrying
-    when OpenSSL::SSL::SSLError
-      SICK  # SSL certificate errors
-    else
-      SICK  # Default to retryable for unknown errors
-    end
   end
 end
