@@ -2,6 +2,7 @@ require "net/http"
 require "nokogiri"
 require "uri"
 require "addressable/uri"
+require "resolv"
 require "debug"
 
 require_relative "ficon/version"
@@ -9,14 +10,21 @@ require_relative "ficon/image"
 require_relative "ficon/cache"
 
 class Ficon
-  attr_reader :site, :final_uri
+  attr_reader :site, :final_uri, :url_status
   attr_accessor :user_agent
+  
+  # URL health status constants
+  ALIVE = 'alive'
+  DEAD = 'dead'
+  SICK = 'sick'
+  BLOCKED = 'blocked'
 
   def initialize(uri, user_agent: nil)
     @uri = Addressable::URI.heuristic_parse(uri)
     @final_uri = @uri
     @site = {}
-    @user_agent = user_agent || "Ficon/#{VERSION} (Ruby icon finder; https://github.com/dkam/ficon)"
+    @url_status = nil
+    @user_agent = user_agent || "FiconBot/#{VERSION} (Ruby icon finder; https://github.com/dkam/ficon)"
     process
   end
 
@@ -70,6 +78,7 @@ class Ficon
     report_lines << "Page description: #{@site[:description]}"
     report_lines << "Final URL: #{@final_uri}" if @final_uri.to_s != @uri.to_s
     report_lines << "Canonical URL: #{@site[:canonical]}" if @site[:canonical]
+    report_lines << "URL Status: #{@url_status}" if @url_status
     report_lines.join("\n") + "\n"
   end
 
@@ -84,6 +93,10 @@ class Ficon
   def title = @site[:title]
 
   def description = @site[:description]
+
+  def self.clear_cache
+    Cache.clear_cache
+  end
 
   def other_page_data
     @site[:title] = doc.at_xpath("//meta[@property='og:title']/@content")&.value || @doc.at_xpath("//title")&.text&.strip
@@ -128,8 +141,11 @@ class Ficon
 
   def fetch_url(uri, redirect_limit = 5)
     uri = URI(uri) unless uri.is_a?(URI)
-
-    raise "Too many redirects" if redirect_limit <= 0
+    
+    if redirect_limit <= 0
+      @url_status = DEAD
+      raise "Too many redirects"
+    end
 
     Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
       http.read_timeout = 10
@@ -137,7 +153,10 @@ class Ficon
       request = Net::HTTP::Get.new(uri)
       request["User-Agent"] = @user_agent
       response = http.request(request)
-
+      
+      # Set status based on response
+      @url_status = classify_response_status(response)
+      
       case response
       when Net::HTTPRedirection
         location = response["location"]
@@ -149,11 +168,40 @@ class Ficon
       else
         @final_uri = Addressable::URI.parse(uri.to_s)
       end
-
+      
       response
     end
-  rescue Net::HTTPError, SocketError, Timeout::Error => e
+  rescue => e
+    @url_status = classify_exception_status(e)
     puts "Failed to fetch #{uri}: #{e.inspect}"
     nil
+  end
+
+  def classify_response_status(response)
+    case response.code.to_i
+    when 200..299
+      ALIVE
+    when 404, 410
+      DEAD
+    when 401, 403, 429
+      BLOCKED
+    when 500..599
+      SICK
+    else
+      SICK
+    end
+  end
+
+  def classify_exception_status(exception)
+    case exception
+    when SocketError, Resolv::ResolutionError
+      DEAD  # DNS resolution failures
+    when Net::HTTPError, Timeout::Error, Errno::ECONNREFUSED
+      SICK  # Network issues worth retrying
+    when OpenSSL::SSL::SSLError
+      SICK  # SSL certificate errors
+    else
+      SICK  # Default to retryable for unknown errors
+    end
   end
 end

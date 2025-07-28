@@ -58,7 +58,7 @@ class FiconTest < Minitest::Test
   def test_custom_user_agent
     # Test default user agent
     ficon_default = Ficon.new('https://example.com')
-    assert_match(/^Ficon\/0\.2/, ficon_default.user_agent)
+    assert_match(/^FiconBot\/0\.\d+/, ficon_default.user_agent)
     
     # Test custom user agent
     custom_agent = 'MyApp/1.0 (Custom Bot)'

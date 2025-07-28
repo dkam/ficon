@@ -40,6 +40,33 @@ class Ficon
       db.execute("UPDATE urls SET not_before=? WHERE url=?", [_value, @url])
     end
 
+    def status
+      db.execute("select status from urls where url=? limit 1", @url).first&.first
+    end
+
+    def status=(_value)
+      db.execute("INSERT OR IGNORE INTO urls (url, status) VALUES (?, ?)", [@url, _value])
+      db.execute("UPDATE urls SET status=? WHERE url=?", [_value, @url])
+    end
+
+    def retry_count
+      db.execute("select retry_count from urls where url=? limit 1", @url).first&.first || 0
+    end
+
+    def retry_count=(_value)
+      db.execute("INSERT OR IGNORE INTO urls (url, retry_count) VALUES (?, ?)", [@url, _value])
+      db.execute("UPDATE urls SET retry_count=? WHERE url=?", [_value, @url])
+    end
+
+    def last_attempt
+      db.execute("select last_attempt from urls where url=? limit 1", @url).first&.first
+    end
+
+    def last_attempt=(_value)
+      db.execute("INSERT OR IGNORE INTO urls (url, last_attempt) VALUES (?, ?)", [@url, _value])
+      db.execute("UPDATE urls SET last_attempt=? WHERE url=?", [_value, @url])
+    end
+
     def self.db_file
       if ENV["FICON_DB"].nil?
         File.expand_path("~/.ficon.db")
@@ -49,8 +76,12 @@ class Ficon
     end
 
     def self.setup_cache(db)
-      db.execute("CREATE TABLE urls(url, etag, not_before, data)")
+      db.execute("CREATE TABLE urls(url, etag, not_before, data, status, retry_count, last_attempt)")
       db.execute("CREATE UNIQUE INDEX `url` ON `urls` (`url`)")
+    end
+
+    def self.clear_cache
+      File.delete(db_file) if File.exist?(db_file)
     end
   end
 end
