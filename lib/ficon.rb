@@ -1,21 +1,19 @@
 require 'open-uri'
 require 'nokogiri'
 require 'uri'
-require "ostruct"
 require 'addressable/uri'
-require 'byebug'
+require 'debug'
 
 require_relative 'ficon/version'
 require_relative 'ficon/image'
 require_relative 'ficon/cache'
 
-module Ficon
-  class Site
+class Ficon
 
     attr_reader :site
     def initialize(uri)
       @uri = Addressable::URI.heuristic_parse(uri)
-      @site = OpenStruct.new
+      @site = {}
       process
     end
 
@@ -25,7 +23,7 @@ module Ficon
       @data ||= cache.data 
       
       if @data.nil?
-        @data =  open(@uri)
+        @data =  URI.open(@uri)
         cache.data       = @data.read.force_encoding('UTF-8')
         cache.etag       = @data.meta['etag']           if @data.respond_to?(:meta)
         cache.not_before = @data.meta['last-modified']  if @data.respond_to?(:meta)
@@ -52,46 +50,46 @@ module Ficon
 
 
     def process
-      @site.images      = Site.site_images(@uri, doc)||[]
-      @site.page_images = Site.page_images(@uri, doc)||[]
+      @site[:images]      = self.class.site_images(@uri, doc)||[]
+      @site[:page_images] = self.class.page_images(@uri, doc)||[]
       other_page_data
       return
     end
 
     def report
-      r  = "Site icon: #{@site.images.first.to_s}\n"
-      r += "Page icon: #{@site.page_images.first.to_s}\n"
-      r += "Page title: #{@site.title}\n"
-      r += "Page description: #{@site.description}\n"
-      r += "Canonical URL: #{@site.canonical}\n"
-
-      return r
+      <<~REPORT
+        Site icon: #{@site[:images].first}
+        Page icon: #{@site[:page_images].first}
+        Page title: #{@site[:title]}
+        Page description: #{@site[:description]}
+        Canonical URL: #{@site[:canonical]}
+      REPORT
     end
 
     def site_icons
-      @site.images
+      @site[:images]
     end
 
     def page_images
-      @site.page_images
+      @site[:page_images]
     end
 
     def title
-      @site.title
+      @site[:title]
     end
 
     def description
-      @site.description
+      @site[:description]
     end
 
     def other_page_data
-      @site.title       = doc.at_xpath("//meta[@property='og:title']/@content")&.value ||  @doc.at_xpath("//title")&.text&.strip
-      @site.description = doc.at_xpath("//meta[@property='og:description']/@content")&.value
+      @site[:title]       = doc.at_xpath("//meta[@property='og:title']/@content")&.value ||  @doc.at_xpath("//title")&.text&.strip
+      @site[:description] = doc.at_xpath("//meta[@property='og:description']/@content")&.value
       canonical   = doc.at_xpath("//link[@rel='canonical']/@href")&.value
-      @site.canonical   = canonical unless canonical == @url
+      @site[:canonical]   = canonical unless canonical == @url
     end
 
-    def self.site_images(uri, doc, site=nil)
+    def self.site_images(uri, doc)
       results = []
 
       paths = "//meta[@name='msapplication-TileImage']|//link[@type='image/ico' or @type='image/vnd.microsoft.icon']|//link[@rel='icon' or @rel='shortcut icon' or @rel='apple-touch-icon-precomposed' or @rel='apple-touch-icon']"
@@ -100,7 +98,7 @@ module Ficon
       results =  results.collect {|result| normalise(uri, result)}.uniq.collect {|i| Image.new(i) }.sort {|a,b| a.area <=> b.area }.reverse
     end
 
-    def self.page_images(uri, doc, site=nil)
+    def self.page_images(uri, doc)
       doc.xpath("//meta[@property='og:image']").
         collect {|e| e.values.select {|v|  v =~ /\.png$|\.jpg$|\.gif$|\.ico$|\.svg$|\.ico\?\d*$/ }}.flatten.
         collect {|v| v[/^http/] || v[/^\//]  ? v : '/' + v  }.collect {|result| normalise(uri, result)}.uniq.collect {|i| Image.new(i)}.sort {|a, b| a.area <=> b.area }.reverse
@@ -117,5 +115,4 @@ module Ficon
     end
 
 
-  end
 end 

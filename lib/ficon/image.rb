@@ -1,7 +1,8 @@
 require 'open-uri'
 require 'fastimage'
+require 'json'
 
-module Ficon
+class Ficon
   class Image
     require 'fastimage'
 
@@ -9,8 +10,9 @@ module Ficon
     def initialize(url)
       @url = url
       c = Cache.new(@url)
-      @size = Cache.new(url).data || FastImage.size(url)
-      c.data = @size
+      cached_size = Cache.new(url).data
+      @size = cached_size ? JSON.parse(cached_size) : FastImage.size(url)
+      c.data = @size.to_json if @size
       @area = @size&.inject(&:*) || 0
     end
 

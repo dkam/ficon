@@ -1,5 +1,5 @@
 #require 'rubygems'
-require 'byebug'
+require 'debug'
 
 require "minitest/autorun"
 
@@ -35,15 +35,14 @@ require 'ficon'
 
 
 class FiconTest < Minitest::Test
-  include Ficon
   ENV['FICON_DB']=File.join( File.dirname(__FILE__), 'test.db')
   def test_html_chunks
     SiteTests.each do |t|
-      result = Site.site_images('https://site.com', Nokogiri::HTML(t[:html]) )[0]
+      result = Ficon.site_images('https://site.com', Nokogiri::HTML(t[:html]) )[0]
       assert result&.url == t[:value], "Seaching |#{t[:html]}| expected #{t[:value]}, got #{result}" 
     end
     PageTests.each do |t|
-      result = Site.page_images('https://site.com', Nokogiri::HTML(t[:html]) )[0]
+      result = Ficon.page_images('https://site.com', Nokogiri::HTML(t[:html]) )[0]
       assert result&.url == t[:value], "Seaching |#{t[:html]}| expected #{t[:value]}, got #{result}" 
     end
   end

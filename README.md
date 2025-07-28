@@ -18,15 +18,16 @@ Or install it yourself as:
 
 ## Usage
 
-    irb(main)> Ficon::Site.new('https://booko.info/9780748109999').site_icons.first.url
+    irb(main)> Ficon.new('https://booko.info/9780748109999').site_icons.first.url
     => "https://booko.info/favicon-196x196.png"
 
-    irb(main)> Ficon::Site.new('https://booko.info/9780748109999').page_images.first.url
+    irb(main)> Ficon.new('https://booko.info/9780748109999').page_images.first.url
     => "https://covers.booko.com.au/9780748109999.jpg"
 
-    irb(main)> site = Ficon::Site.new('https://booko.info/9780748109999')
+    irb(main)> site = Ficon.new('https://booko.info/9780748109999')
+    irb(main)> site.title
     => "Prices for Consider Phlebas by Iain M. Banks"
-    irb(main):010:0> f.site.description
+    irb(main)> site.description
     => "Prices (including delivery) for Consider Phlebas by Iain M. Banks range from $12.40 at Blackwell's up to $12.99."
 
 

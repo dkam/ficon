@@ -1,7 +1,6 @@
 require 'sqlite3'
-require 'json'
 
-module Ficon
+class Ficon
 
   class Cache
     def initialize(url)
@@ -16,39 +15,30 @@ module Ficon
     end
 
     def data
-      JSON.parse db.execute( "select data from urls where url=?limit 1", @url ).first&.first
-    rescue
-      return nil
+      db.execute("select data from urls where url=? limit 1", @url).first&.first
     end
 
     def data=(_value)
-      value = _value.to_json
-      db.execute("INSERT OR IGNORE INTO urls (url, data) VALUES (?, ?)", [@url, value])
-      db.execute("UPDATE urls SET data=? WHERE url=?", [value, @url])
+      db.execute("INSERT OR IGNORE INTO urls (url, data) VALUES (?, ?)", [@url, _value])
+      db.execute("UPDATE urls SET data=? WHERE url=?", [_value, @url])
     end
 
     def etag
-      JSON.parse db.execute( "select etag from urls where url=?limit 1", @url ).first&.first
-    rescue 
-      return nil
+      db.execute("select etag from urls where url=? limit 1", @url).first&.first
     end
 
     def etag=(_value)
-      value = _value.to_json
-      db.execute("INSERT OR IGNORE INTO urls (url, etag) VALUES (?, ?)", [@url, value])
-      db.execute("UPDATE urls SET etag=? WHERE url=?", [value, @url])
+      db.execute("INSERT OR IGNORE INTO urls (url, etag) VALUES (?, ?)", [@url, _value])
+      db.execute("UPDATE urls SET etag=? WHERE url=?", [_value, @url])
     end
 
     def not_before
-      JSON.parse db.execute( "select not_before from urls where url=?limit 1", @url ).first&.first
-    rescue 
-      return nil
+      db.execute("select not_before from urls where url=? limit 1", @url).first&.first
     end
 
     def not_before=(_value)
-      value = _value.to_json
-      db.execute("INSERT OR IGNORE INTO urls (url, not_before) VALUES (?, ?)", [@url, value])
-      db.execute("UPDATE urls SET not_before=? WHERE url=?", [value, @url])
+      db.execute("INSERT OR IGNORE INTO urls (url, not_before) VALUES (?, ?)", [@url, _value])
+      db.execute("UPDATE urls SET not_before=? WHERE url=?", [_value, @url])
     end
 
     def self.db_file

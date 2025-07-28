@@ -1,3 +1,3 @@
-module Ficon
-  VERSION = "0.0.7"
+class Ficon
+  VERSION = "0.1"
 end
