@@ -203,6 +203,27 @@ class Ficon
     end
   rescue => e
     @url_status = classify_exception_status(e)
+    
+    # If HTTP request failed and we're using HTTP, try HTTPS automatically
+    if uri.scheme == "http" &&
+      !uri.to_s.include?("://localhost") &&
+      !uri.host.match?(/^\d+\.\d+\.\d+\.\d+$/)
+      puts "HTTP request failed, trying HTTPS for #{uri}"
+      https_uri = uri.dup
+      https_uri.scheme = "https"
+      https_uri.port = 443 if https_uri.port == 80
+      
+      begin
+        https_response = fetch_url(https_uri, redirect_limit)
+        if https_response
+          puts "HTTPS request succeeded, using HTTPS URL"
+          return https_response
+        end
+      rescue => https_error
+        puts "HTTPS fallback also failed: #{https_error.inspect}"
+      end
+    end
+    
     puts "Failed to fetch #{uri}: #{e.inspect}"
     nil
   end

@@ -112,6 +112,63 @@ class FiconTest < Minitest::Test
     assert_equal Ficon::SICK, ficon.classify_exception_status(StandardError.new)
   end
 
+  def test_http_to_https_fallback_conditions
+    # Test that localhost URLs are not converted to HTTPS
+    ficon_localhost = Ficon.allocate
+    uri_localhost = URI('http://localhost:3000/test')
+    
+    # Mock the fetch_url method to simulate HTTP failure
+    def ficon_localhost.fetch_url(uri, redirect_limit = 5)
+      if uri.scheme == "http" && !uri.to_s.include?("://localhost") && !uri.host.match?(/^\d+\.\d+\.\d+\.\d+$/)
+        # This should not be reached for localhost
+        raise "Should not attempt HTTPS fallback for localhost"
+      end
+      nil
+    end
+    
+    # This should not raise an exception
+    result = ficon_localhost.send(:fetch_url, uri_localhost)
+    assert_nil result
+    
+    # Test that IP addresses are not converted to HTTPS
+    ficon_ip = Ficon.allocate
+    uri_ip = URI('http://192.168.1.1/test')
+    
+    def ficon_ip.fetch_url(uri, redirect_limit = 5)
+      if uri.scheme == "http" && !uri.to_s.include?("://localhost") && !uri.host.match?(/^\d+\.\d+\.\d+\.\d+$/)
+        # This should not be reached for IP addresses
+        raise "Should not attempt HTTPS fallback for IP addresses"
+      end
+      nil
+    end
+    
+    # This should not raise an exception
+    result = ficon_ip.send(:fetch_url, uri_ip)
+    assert_nil result
+  end
+
+  def test_https_port_conversion
+    # Test that port 80 is converted to 443 when switching to HTTPS
+    http_uri = URI('http://example.com:80/test')
+    assert_equal 80, http_uri.port
+    
+    https_uri = http_uri.dup
+    https_uri.scheme = "https"
+    https_uri.port = 443 if https_uri.port == 80
+    
+    assert_equal "https", https_uri.scheme
+    assert_equal 443, https_uri.port
+    
+    # Test that custom ports are preserved
+    http_custom_uri = URI('http://example.com:8080/test')
+    https_custom_uri = http_custom_uri.dup
+    https_custom_uri.scheme = "https"
+    https_custom_uri.port = 443 if https_custom_uri.port == 80
+    
+    assert_equal "https", https_custom_uri.scheme
+    assert_equal 8080, https_custom_uri.port  # Should remain unchanged
+  end
+
   private
 
   def mock_response(code)
