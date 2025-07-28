@@ -1,4 +1,4 @@
-require "open-uri"
+require "net/http"
 require "nokogiri"
 require "uri"
 require "addressable/uri"
@@ -22,20 +22,22 @@ class Ficon
     @data ||= cache.data
 
     if @data.nil?
-      @data = URI.open(@uri)
-      cache.data = @data.read.force_encoding("UTF-8")
-      cache.etag = @data.meta["etag"] if @data.respond_to?(:meta)
-      cache.not_before = @data.meta["last-modified"] if @data.respond_to?(:meta)
-      @data.rewind
+      response = fetch_url(@uri)
+      return nil unless response
+      
+      @data = response.body.force_encoding("UTF-8")
+      cache.data = @data
+      cache.etag = response["etag"] if response["etag"]
+      cache.not_before = response["last-modified"] if response["last-modified"]
     end
 
     @doc ||= Nokogiri::HTML(@data)
     @doc
-  rescue OpenURI::HTTPError, SocketError => e
-    puts "OpenURI:  #{e.inspect}"
+  rescue Net::HTTPError, SocketError => e
+    puts "HTTP Error: #{e.inspect}"
     nil
   rescue TypeError => e
-    if /^http/.match?(uri.to_s)
+    if /^http/.match?(@uri.to_s)
       puts "#{e.inspect}"
       puts "#{e.backtrace.join('\n')}"
     else
@@ -44,6 +46,22 @@ class Ficon
     nil
   rescue RuntimeError => e
     puts "#{e.message}"
+    nil
+  end
+
+  private
+
+  def fetch_url(uri)
+    uri = URI(uri) unless uri.is_a?(URI)
+    
+    Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
+      http.read_timeout = 10
+      http.open_timeout = 5
+      request = Net::HTTP::Get.new(uri)
+      http.request(request)
+    end
+  rescue Net::HTTPError, SocketError, Timeout::Error => e
+    puts "Failed to fetch #{uri}: #{e.inspect}"
     nil
   end
 

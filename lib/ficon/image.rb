@@ -1,11 +1,9 @@
-require "open-uri"
+require "net/http"
 require "fastimage"
 require "json"
 
 class Ficon
   class Image
-    require "fastimage"
-
     attr_reader :url, :size, :area, :tile_color
     def initialize(url, tile_color = nil)
       @url = url
